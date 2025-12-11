@@ -61,3 +61,80 @@ Test Safe Command: Run ls -la → Success.
 Test Blocked Command: Run rm -rf / → Blocked.
 
 Test Approval: Run sudo update → Pending. Switch to Admin to Approve.
+
+API Documentation
+
+The backend runs on http://localhost:3000 (or your deployed URL). All protected endpoints require the x-api-key header.
+
+1. Execute Command
+Submits a command for processing. The system checks credits and regex rules.
+
+Endpoint: POST /commands
+
+Headers: x-api-key: <YOUR_API_KEY>
+
+{ "command_text": "ls -la" }
+
+Response (Success):
+
+{ "status": "executed", "new_balance": 99 }
+
+2. Fetch Audit Logs
+Retrieves the command history. Admins see all logs; Members see only their own.
+
+Endpoint: GET /history
+
+Headers: x-api-key: <YOUR_API_KEY>
+
+Response:
+
+[
+  {
+    "id": 1,
+    "username": "TestUser",
+    "command_text": "sudo update",
+    "status": "PENDING",
+    "created_at": "2023-12-11T10:00:00.000Z"
+  }
+]
+
+3. Approve Request (Admin Only)
+Approves or denies a pending command.
+
+Endpoint: POST /approvals
+
+Headers: x-api-key: <ADMIN_API_KEY>
+
+Body:
+
+JSON
+
+{ "logId": 12, "decision": "APPROVE" }
+
+4. Add Rule (Admin Only)
+Adds a new regex pattern to the rule engine.
+
+Endpoint: POST /rules
+
+Body:
+
+JSON
+
+{
+  "pattern": "^sudo",
+  "action": "REQUIRE_APPROVAL",
+  "threshold": 2,
+  "start": 9,
+  "end": 17
+}
+5. Create User (Admin Only)
+
+Generates a new user and returns their one-time API key.
+
+Endpoint: POST /users
+
+Body:
+
+JSON
+
+{ "username": "JuniorDev", "role": "member", "seniority": "junior" }
