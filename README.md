@@ -53,7 +53,7 @@ Bash
 node server.js
 Open index.html in your browser.
 
-How to Test (Walkthrough)
+###How to Test (Walkthrough)
 Login: Use default key admin-secret.
 
 Test Safe Command: Run ls -la → Success.
@@ -62,7 +62,7 @@ Test Blocked Command: Run rm -rf / → Blocked.
 
 Test Approval: Run sudo update → Pending. Switch to Admin to Approve.
 
-API Documentation
+###API Documentation
 
 The backend runs on http://localhost:3000 (or your deployed URL). All protected endpoints require the x-api-key header.
 
