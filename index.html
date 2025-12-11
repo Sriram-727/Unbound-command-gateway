@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unbound Gateway | Enterprise Console</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --surface-hover: #334155;
+            --border: #334155;
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.5);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+        /* HEADER */
+        header { 
+            height: 60px; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px); 
+            border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
+        }
+        .logo { font-weight: 700; font-size: 1.2rem; display: flex; align-items: center; gap: 10px; color: var(--text); }
+        .logo i { color: var(--primary); }
+        .live-dot { height: 8px; width: 8px; background: var(--success); border-radius: 50%; box-shadow: 0 0 8px var(--success); animation: pulse 2s infinite; }
+        
+        /* LOGIN SCREEN */
+        #login-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 999;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .login-card {
+            background: var(--surface); padding: 40px; border-radius: 12px; border: 1px solid var(--border);
+            width: 400px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        input, select {
+            width: 100%; background: #0f172a; border: 1px solid var(--border); color: var(--text); padding: 12px;
+            border-radius: 6px; margin-bottom: 15px; font-family: 'Inter', sans-serif; outline: none; transition: 0.2s;
+        }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-glow); }
+        
+        button {
+            width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px;
+            font-weight: 600; cursor: pointer; transition: 0.2s;
+        }
+        button:hover { filter: brightness(1.1); }
+        button.btn-danger { background: var(--danger); }
+        button.btn-success { background: var(--success); }
+        button.btn-sm { width: auto; padding: 6px 12px; font-size: 0.85rem; }
+
+        /* MAIN LAYOUT */
+        .dashboard { display: grid; grid-template-columns: 350px 1fr; gap: 1px; height: calc(100vh - 60px); }
+        .sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+        .main-content { padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+
+        /* CARDS & PANELS */
+        .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+        .panel-header { padding: 15px; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02); font-weight: 600; display: flex; justify-content: space-between; }
+        .panel-body { padding: 15px; }
+
+        /* TERMINAL */
+        .terminal-window { background: #0d1117; border-radius: 8px; border: 1px solid var(--border); font-family: 'JetBrains Mono', monospace; display: flex; flex-direction: column; height: 300px; }
+        .terminal-output { flex: 1; padding: 15px; overflow-y: auto; color: #adbac7; font-size: 0.9rem; }
+        .terminal-input-area { display: flex; border-top: 1px solid var(--border); background: #161b22; }
+        .terminal-input-area input { border: none; background: transparent; margin: 0; border-radius: 0; color: #fff; font-family: 'JetBrains Mono', monospace; }
+        .terminal-input-area button { width: auto; border-radius: 0; }
+
+        /* USER PROFILE CARD */
+        .user-card { display: flex; align-items: center; gap: 12px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+        .avatar { width: 40px; height: 40px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .stat-badge { background: #334155; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; color: #cbd5e1; }
+
+        /* TABLE */
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th { text-align: left; padding: 12px; color: var(--text-muted); font-weight: 500; border-bottom: 1px solid var(--border); }
+        td { padding: 12px; border-bottom: 1px solid var(--border); }
+        tr:hover { background: rgba(255,255,255,0.02); }
+        
+        /* STATUS PILLS */
+        .pill { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; }
+        .pill.exec { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
+        .pill.pend { background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.2); }
+        .pill.rej { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
+
+        /* GOD MODE SWITCHER */
+        .god-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .user-chip { 
+            background: #0f172a; padding: 10px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px;
+        }
+        .user-chip:hover { border-color: var(--primary); transform: translateY(-2px); }
+        .user-chip i { color: var(--text-muted); }
+
+        /* TOAST NOTIFICATIONS */
+        #toast-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 1000; }
+        .toast { background: var(--surface); border: 1px solid var(--border); padding: 15px 20px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 10px; animation: slideIn 0.3s ease; width: 300px; }
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--danger); }
+        .toast.info { border-left: 4px solid var(--primary); }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div id="toast-container"></div>
+
+    <div id="login-overlay">
+        <div class="login-card">
+            <div style="font-size: 3rem; margin-bottom: 20px; color: var(--primary);"><i class="fa-solid fa-shield-halved"></i></div>
+            <h2>Unbound Gateway</h2>
+            <p style="color: var(--text-muted); margin-bottom: 20px;">Secure Command Execution Environment</p>
+            <input type="text" id="apiKeyInput" placeholder="Paste API Key">
+            <button onclick="login()">Authenticate</button>
+            <p style="margin-top: 15px; font-size: 0.8rem; color: var(--text-muted);">Default Admin: <code>admin-secret</code></p>
+        </div>
+    </div>
+
+    <header>
+        <div class="logo">
+            <i class="fa-solid fa-shield-halved"></i> Unbound<span style="color:white; font-weight:400;">Gateway</span>
+            <div class="pill exec" style="margin-left: 10px; padding: 2px 8px;"><div class="live-dot"></div> Live</div>
+        </div>
+        <div style="display:flex; align-items: center; gap: 20px;">
+            <div style="text-align: right;">
+                <div style="font-size: 0.8rem; color: var(--text-muted);">CREDIT BALANCE</div>
+                <div style="font-size: 1.1rem; font-weight: 700; color: var(--primary);" id="header-credits">0 CR</div>
+            </div>
+            <button class="btn-sm" style="background: #334155;" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i></button>
+        </div>
+    </header>
+
+    <div class="dashboard hidden" id="dashboard">
+        
+        <aside class="sidebar">
+            <div class="user-card">
+                <div class="avatar" id="user-avatar">U</div>
+                <div>
+                    <div style="font-weight: 600;" id="uName">Loading...</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">
+                        <span id="uRole">...</span> • <span id="uSeniority">...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="god-mode-panel" class="hidden">
+                <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 1px;">Fast User Switcher</div>
+                <div class="god-grid" id="god-grid"></div>
+            </div>
+
+            <div id="admin-panel" class="hidden">
+                <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 1px;">Admin Controls</div>
+                
+                <div class="panel" style="margin-bottom: 15px;">
+                    <div class="panel-body">
+                        <strong style="display:block; margin-bottom: 8px;"><i class="fa-solid fa-user-plus"></i> Create User</strong>
+                        <input type="text" id="nUser" placeholder="Username" style="margin-bottom: 5px;">
+                        <div style="display:flex; gap: 5px; margin-bottom: 5px;">
+                            <select id="nRole"><option value="member">Member</option><option value="admin">Admin</option></select>
+                            <select id="nSenior"><option value="junior">Junior</option><option value="senior">Senior</option><option value="lead">Lead</option></select>
+                        </div>
+                        <button class="btn-sm" onclick="mkUser()">Create</button>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-body">
+                        <strong style="display:block; margin-bottom: 8px;"><i class="fa-solid fa-gavel"></i> Add Rule</strong>
+                        <input type="text" id="rPat" placeholder="Regex (e.g. ^prod)" style="margin-bottom: 5px;">
+                        <select id="rAct" style="margin-bottom: 5px;">
+                            <option value="AUTO_ACCEPT">Auto Accept</option>
+                            <option value="REQUIRE_APPROVAL">Require Approval</option>
+                            <option value="AUTO_REJECT">Auto Block</option>
+                        </select>
+                        <div style="display:flex; gap: 5px; margin-bottom: 5px;">
+                            <input type="number" id="rThresh" placeholder="Votes" value="1" title="Threshold">
+                            <input type="number" id="rStart" placeholder="Start" value="0" title="Start Hour">
+                            <input type="number" id="rEnd" placeholder="End" value="24" title="End Hour">
+                        </div>
+                        <button class="btn-sm" onclick="addRule()">Save Rule</button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            
+            <div id="approvals-section" class="hidden">
+                <div class="panel" style="border-color: var(--warning);">
+                    <div class="panel-header" style="color: var(--warning);">
+                        <span><i class="fa-solid fa-triangle-exclamation"></i> Action Required</span>
+                    </div>
+                    <div class="panel-body" id="pending-list">
+                        </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <span><i class="fa-solid fa-terminal"></i> Command Terminal</span>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">bash --restricted</span>
+                </div>
+                <div class="terminal-window">
+                    <div class="terminal-output" id="term">
+                        <div style="color: var(--success);">[SYSTEM] Gateway connected. Ready for input...</div>
+                    </div>
+                    <div class="terminal-input-area">
+                        <div style="padding: 12px; color: var(--success); font-weight: bold;">$</div>
+                        <input type="text" id="cmdInput" placeholder="Type a command (e.g., 'sudo update', 'ls -la')..." autocomplete="off">
+                        <button style="width: 100px;" onclick="runCmd()">RUN</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel" style="flex: 1; display:flex; flex-direction:column;">
+                <div class="panel-header">
+                    <span><i class="fa-solid fa-list-check"></i> Audit Log</span>
+                    <button class="btn-sm" style="background:transparent; border:1px solid var(--border);" onclick="refresh()"><i class="fa-solid fa-rotate-right"></i></button>
+                </div>
+                <div style="overflow-y: auto; flex: 1;">
+                    <table id="logs">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>User</th>
+                                <th>Command</th>
+                                <th>Status</th>
+                                <th>Votes</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // Empty string means "use the current domain"
+const API = '';
+        let key = localStorage.getItem('k');
+
+        // Toast Notification Helper
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            let icon = type === 'success' ? 'check-circle' : type === 'error' ? 'circle-exclamation' : 'info-circle';
+            toast.innerHTML = `<i class="fa-solid fa-${icon}"></i> <span>${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // Auto Login
+        if(key) login(true);
+
+        async function login(auto=false) {
+            if(!auto) key = document.getElementById('apiKeyInput').value;
+            if(!key) { if(!auto) showToast('Please enter an API key', 'error'); return; }
+
+            try {
+                const res = await fetch(`${API}/me`, { headers: {'x-api-key': key} });
+                if(res.ok) {
+                    const u = await res.json();
+                    localStorage.setItem('k', key);
+                    
+                    document.getElementById('login-overlay').style.display = 'none';
+                    document.getElementById('dashboard').classList.remove('hidden');
+
+                    // Fill User Data
+                    document.getElementById('uName').innerText = u.username;
+                    document.getElementById('user-avatar').innerText = u.username.charAt(0).toUpperCase();
+                    document.getElementById('uRole').innerText = u.role.toUpperCase();
+                    document.getElementById('uSeniority').innerText = u.seniority.toUpperCase();
+                    document.getElementById('header-credits').innerText = u.credits;
+
+                    if(u.role === 'admin') {
+                        document.getElementById('admin-panel').classList.remove('hidden');
+                        document.getElementById('approvals-section').classList.remove('hidden');
+                        document.getElementById('god-mode-panel').classList.remove('hidden');
+                        loadUserSwitcher();
+                    }
+                    
+                    refresh();
+                    setInterval(refresh, 2000); // Real-time polling
+                    if(!auto) showToast('Authenticated Successfully', 'success');
+                } else {
+                    localStorage.removeItem('k');
+                    if(auto) document.getElementById('login-overlay').style.display = 'flex';
+                    else showToast('Invalid API Key', 'error');
+                }
+            } catch(e) { showToast('Cannot connect to server', 'error'); }
+        }
+
+        function logout() { localStorage.removeItem('k'); location.reload(); }
+
+        // COMMAND EXECUTION
+        async function runCmd() {
+            const cmdInput = document.getElementById('cmdInput');
+            const cmd = cmdInput.value;
+            if(!cmd) return;
+            
+            const term = document.getElementById('term');
+            term.innerHTML += `<div class="log-entry" style="color:#fff">> ${cmd}</div>`;
+            term.scrollTop = term.scrollHeight;
+            cmdInput.value = '';
+
+            try {
+                const res = await fetch(`${API}/commands`, { 
+                    method:'POST', headers:{'Content-Type':'application/json','x-api-key':key}, 
+                    body:JSON.stringify({command_text:cmd})
+                });
+                const d = await res.json();
+                
+                let color = '#94a3b8';
+                let icon = '';
+                if(d.status === 'executed') { color = '#10b981'; icon = '✔'; }
+                else if(d.status === 'pending') { color = '#f59e0b'; icon = '⏳'; }
+                else { color = '#ef4444'; icon = '✖'; }
+
+                term.innerHTML += `<div style="color:${color}; margin-bottom:10px;">${icon} [${d.status.toUpperCase()}] ${d.reason || ''}</div>`;
+                term.scrollTop = term.scrollHeight;
+                refresh(); // Instant update
+            } catch(e) { showToast('Execution failed', 'error'); }
+        }
+
+        // DATA REFRESH
+        async function refresh() {
+            try {
+                // Update Credits
+                const me = await (await fetch(`${API}/me`, { headers: {'x-api-key': key} })).json();
+                document.getElementById('header-credits').innerText = me.credits + ' CR';
+
+                // Update Logs
+                const logs = await (await fetch(`${API}/history`, {headers:{'x-api-key':key}})).json();
+                const tbody = document.querySelector('#logs tbody');
+                
+                tbody.innerHTML = logs.map(l => {
+                    let pillClass = l.status === 'EXECUTED' ? 'exec' : l.status === 'PENDING' ? 'pend' : 'rej';
+                    let icon = l.status === 'EXECUTED' ? 'check' : l.status === 'PENDING' ? 'clock' : 'ban';
+                    
+                    const time = new Date(l.created_at).toLocaleTimeString('en-US', {hour12:false});
+                    
+                    return `<tr>
+                        <td style="font-family:monospace; color:var(--primary);">${time}</td>
+                        <td>${l.username} <span style="font-size:0.7em; opacity:0.6">${l.seniority}</span></td>
+                        <td><code style="color:#cbd5e1">${l.command_text}</code></td>
+                        <td><span class="pill ${pillClass}"><i class="fa-solid fa-${icon}"></i> ${l.status}</span></td>
+                        <td>${l.status === 'PENDING' ? `<small>${l.current_approvals}/${l.required_approvals}</small>` : ''}</td>
+                    </tr>`
+                }).join('');
+
+                // Admin: Update Pending List
+                if(me.role === 'admin') {
+                    const pending = logs.filter(l => l.status === 'PENDING');
+                    const list = document.getElementById('pending-list');
+                    if(pending.length === 0) {
+                        list.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:10px;">No pending approvals</div>';
+                    } else {
+                        list.innerHTML = pending.map(p => `
+                            <div style="background:var(--bg); border:1px solid var(--border); padding:12px; border-radius:6px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <div style="font-weight:600; color:var(--warning); font-size:0.9rem;">${p.username}</div>
+                                    <code style="font-size:0.8rem;">${p.command_text}</code>
+                                    <div style="font-size:0.75rem; color:var(--text-muted);">Votes: ${p.current_approvals}/${p.required_approvals}</div>
+                                </div>
+                                <div style="display:flex; gap:5px;">
+                                    <button class="btn-sm btn-success" onclick="vote(${p.id}, 'APPROVE')"><i class="fa-solid fa-check"></i></button>
+                                    <button class="btn-sm btn-danger" onclick="vote(${p.id}, 'DENY')"><i class="fa-solid fa-xmark"></i></button>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                }
+            } catch(e) {}
+        }
+
+        async function vote(id, dec) {
+            const res = await fetch(`${API}/approvals`, { method:'POST', headers:{'Content-Type':'application/json','x-api-key':key}, body:JSON.stringify({logId:id, decision:dec})});
+            if(res.ok) { showToast(`Request ${dec}ED`, 'success'); refresh(); }
+            else showToast((await res.json()).error, 'error');
+        }
+
+        // ADMIN TOOLS
+        async function addRule() {
+            const body = {
+                pattern: document.getElementById('rPat').value,
+                action: document.getElementById('rAct').value,
+                threshold: document.getElementById('rThresh').value,
+                start: document.getElementById('rStart').value,
+                end: document.getElementById('rEnd').value
+            };
+            const res = await fetch(`${API}/rules`, { method:'POST', headers:{'Content-Type':'application/json','x-api-key':key}, body:JSON.stringify(body)});
+            if(res.ok) { showToast('Rule Added', 'success'); document.getElementById('rPat').value=''; } 
+            else showToast((await res.json()).error, 'error');
+        }
+
+        async function mkUser() {
+            const body = { username: document.getElementById('nUser').value, role: document.getElementById('nRole').value, seniority: document.getElementById('nSenior').value };
+            const res = await fetch(`${API}/users`, { method:'POST', headers:{'Content-Type':'application/json','x-api-key':key}, body:JSON.stringify(body)});
+            const d = await res.json();
+            showToast('User Created', 'success');
+            // Copy to clipboard trick
+            navigator.clipboard.writeText(d.api_key);
+            showToast('API Key copied to clipboard!', 'info');
+            loadUserSwitcher();
+        }
+
+        async function loadUserSwitcher() {
+            const users = await (await fetch(`${API}/users`, {headers:{'x-api-key':key}})).json();
+            document.getElementById('god-grid').innerHTML = users.map(u => `
+                <div class="user-chip" onclick="switchUser('${u.api_key}')">
+                    <i class="fa-solid fa-user-circle"></i>
+                    <div style="overflow:hidden;">
+                        <div style="font-weight:600; font-size:0.85rem;">${u.username}</div>
+                        <div style="font-size:0.7rem; color:var(--text-muted);">${u.role}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function switchUser(k) { localStorage.setItem('k', k); location.reload(); }
+        
+        // Enter key to run
+        document.getElementById('cmdInput').addEventListener("keypress", function(event) {
+            if (event.key === "Enter") runCmd();
+        });
+    </script>
+</body>
+</html>
