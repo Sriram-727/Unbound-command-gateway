@@ -7,8 +7,8 @@ A secure, transactional command execution system with role-based access control,
 *(e.g., Watch the walkthrough: https://www.loom.com/share/your-video-id)*
 
 ## 🚀 Live Demo (Optional)
-**[PASTE YOUR RENDER LINK HERE IF DEPLOYED]**
-*(e.g., https://unbound-gateway.onrender.com)*
+**[https://unbound-command-gateway-zqyf.onrender.com]**
+
 
 ---
 
