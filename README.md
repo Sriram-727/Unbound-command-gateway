@@ -3,8 +3,7 @@
 A secure, transactional command execution system with role-based access control, regex rule matching, and real-time approval workflows. Built for the Unbound Hackathon.
 
 ## 📺 Demo Video
-**[PASTE YOUR LOOM/YOUTUBE VIDEO LINK HERE]**
-*(e.g., Watch the walkthrough: https://www.loom.com/share/your-video-id)*
+https://www.loom.com/share/9b75464bbe2c4910b53d19595ed9b8e4
 
 ## 🚀 Live Demo (Optional)
 **[https://unbound-command-gateway-zqyf.onrender.com]**
